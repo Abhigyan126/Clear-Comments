@@ -8,14 +8,53 @@ def remove_comments(file_path, overwrite=False):
         with open(file_path, 'r') as file:
             content = file.readlines()
 
-        # Regex to remove Python comments
-        comment_pattern = re.compile(r'#.*')
-        cleaned_lines = [
-            re.sub(comment_pattern, '', line).rstrip() for line in content
+        # Regex patterns for different types of comments
+        comment_patterns = [
+            # Python style comments (#)
+            re.compile(r'#.*'),
+            
+            # C/C++/Java/JavaScript style single-line comments (//)
+            re.compile(r'//.*'),
+            
+            # C/C++/Java/JavaScript/other C-like languages block comments (/* ... */)
+            re.compile(r'/\*.*?\*/', re.DOTALL),
+            
+            # HTML/XML style comments <!-- ... -->
+            re.compile(r'<!--.*?-->', re.DOTALL),
+            
+            # Shell style comments (#!)
+            re.compile(r'#!.*'),
+            
+            # Ruby style comments (#)
+            re.compile(r'#.*'),
+            
+            # Python triple-quoted multi-line comments (""" ... """ or ''' ... ''')
+            re.compile(r'"""(?:[^"\\]|\\.)*?"""', re.DOTALL),
+            re.compile(r"'''(?:[^'\\]|\\.)*?'''", re.DOTALL),
         ]
 
-        # Filter out completely empty lines
-        cleaned_lines = [line for line in cleaned_lines if line.strip()]
+        cleaned_lines = []
+        inside_block_comment = False
+
+        for line in content:
+            # Check for block comments (multi-line) and remove
+            if not inside_block_comment:
+                # Loop through each comment pattern
+                for pattern in comment_patterns:
+                    line = re.sub(pattern, '', line)
+            
+            # Handle multi-line block comments (/* ... */)
+            if '/*' in line:
+                inside_block_comment = True
+            if inside_block_comment and '*/' in line:
+                inside_block_comment = False
+            
+            # Strip leading and trailing whitespace
+            line = line.rstrip()
+
+            # Add line if it's not empty after comment removal
+            if line.strip():
+                cleaned_lines.append(line)
 
         if overwrite:
             with open(file_path, 'w') as file:
